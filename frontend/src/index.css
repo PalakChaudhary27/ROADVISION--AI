@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --black: #0a0a0b;
+    --black-2: #121214;
+    --black-3: #1b1b1e;
+    --line-dark: rgba(255, 255, 255, 0.12);
+    --ink: #f3f1ec;
+    --ink-dim: rgba(243, 241, 236, 0.66);
+    --ink-faint: rgba(243, 241, 236, 0.42);
+    --paper: #f3f1ec;
+    --paper-2: #e9e6df;
+    --text: #121214;
+    --text-dim: #55555b;
+    --line-light: rgba(18, 18, 20, 0.12);
+    --amber: #f5a524;
+    --amber-deep: #d98a0b;
+    --font: "Inter Tight", "Inter", system-ui, -apple-system, sans-serif;
+    --mono: "IBM Plex Mono", Menlo, Consolas, monospace;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background-color: #F8F9FA;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* PIVAI-style button components */
+.btn-pivai-amber {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 9999px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  background-color: #f5a524;
+  color: #0a0a0b;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(245, 165, 36, 0.2);
+}
+
+.btn-pivai-amber:hover {
+  background-color: #ffb840;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 165, 36, 0.3);
+}
+
+.btn-pivai-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f3f1ec;
+  background-color: transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-pivai-ghost:hover {
+  border-color: #f3f1ec;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.btn-pivai-light-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 9999px;
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  border: 1px solid rgba(18, 18, 20, 0.2);
+  color: #121214;
+  background-color: transparent;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-pivai-light-ghost:hover {
+  border-color: #121214;
+  background-color: rgba(18, 18, 20, 0.04);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Print Styles for PDF Generation */
+@media print {
+  @page {
+    margin: 12mm;
+    size: A4 portrait;
+  }
+  
+  body {
+    background-color: #FFFFFF !important;
+    color: #000000 !important;
+    font-size: 11pt;
+  }
+  
+  aside, nav, header, .no-print {
+    display: none !important;
+  }
+  
+  main, .print-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  .page-break {
+    page-break-before: always;
+  }
+}

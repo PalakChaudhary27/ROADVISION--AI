@@ -1,0 +1,138 @@
+[
+  {
+    "filename": "20250223_144944.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 0,
+      "crack": 200322
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 207944
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 209406
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_1_20250223_144944.png"
+  },
+  {
+    "filename": "20250223_144948.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 0,
+      "crack": 133419
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 135500
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 137521
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_2_20250223_144948.png"
+  },
+  {
+    "filename": "vlcsnap-00001.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 0,
+      "crack": 0
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 39
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 187
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_3_vlcsnap-00001.png"
+  },
+  {
+    "filename": "vlcsnap-00002.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 780,
+      "crack": 0
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 0
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 0
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_4_vlcsnap-00002.png"
+  },
+  {
+    "filename": "vlcsnap-00003.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 0,
+      "crack": 0
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 8612
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 9709
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_5_vlcsnap-00003.png"
+  },
+  {
+    "filename": "vlcsnap-00004.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 0,
+      "crack": 0
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 0
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 0
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_6_vlcsnap-00004.png"
+  },
+  {
+    "filename": "vlcsnap-00005.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 0,
+      "crack": 5617
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 6645
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 7677
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_7_vlcsnap-00005.png"
+  },
+  {
+    "filename": "vlcsnap-00006.jpg",
+    "description": "General Road Scene",
+    "gt": {
+      "pothole": 0,
+      "crack": 15544
+    },
+    "baseline": {
+      "pothole": 0,
+      "crack": 21425
+    },
+    "improved": {
+      "pothole": 0,
+      "crack": 23634
+    },
+    "panel_image": "artifacts\\roadvision_model_artifacts\\generalization_panels\\comparison_8_vlcsnap-00006.png"
+  }
+]

@@ -1,0 +1,61 @@
+﻿# Python environments and cache
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node dependencies and builds
+**/node_modules/
+**/dist/
+**/build/
+
+# Secrets and environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Datasets and large archives
+data/
+*.zip
+*.7z
+*.rar
+
+# Model checkpoints and cached tensors
+*.pth
+*.pt
+*.ckpt
+*.onnx
+scratch/
+
+# Temporary files
+*.log
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Internal audit and report-generation artifacts
+roadvision_project_audit/
+audit_results/
+research_paper/
+
+# One-off build/generation scripts (not part of the app)
+build_*.py
+generate_*.py
+build_corrected_ieee_report.py
+build_figures.py
+build_perfect_ieee_paper.py
+build_upgraded_notebook.py
+convert_doc.ps1
+convert_to_pdf.ps1
+inspect_nb.py
+run_sanity_checks.py
+test_annotation_logic.py
+validate_notebook.py
+verify_paper.py
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

@@ -1,0 +1,33 @@
+{
+  "model_name": "RoadVision_DeepLabV3_ResNet50",
+  "architecture": "DeepLabV3_ResNet50",
+  "backbone": "resnet50",
+  "pretrained_weights": "DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1",
+  "in_channels": 3,
+  "num_classes": 3,
+  "aux_loss": true,
+  "aux_loss_weight": 0.4,
+  "input_resolution": {
+    "height": 512,
+    "width": 512,
+    "channels": 3
+  },
+  "normalization": {
+    "mean": [0.485, 0.456, 0.406],
+    "std": [0.229, 0.224, 0.225]
+  },
+  "training_hyperparameters": {
+    "batch_size": 8,
+    "backbone_lr": 0.00001,
+    "head_lr": 0.0001,
+    "optimizer": "AdamW (differential LR)",
+    "loss_function": "WeightedCE+Dice",
+    "class_weights": [0.2, 1.5, 1.5]
+  },
+  "classes": {
+    "0": "background",
+    "1": "pothole",
+    "2": "crack"
+  },
+  "framework": "PyTorch"
+}

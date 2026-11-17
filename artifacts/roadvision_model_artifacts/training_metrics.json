@@ -1,0 +1,25 @@
+{
+  "best_validation_miou": 0.6060,
+  "test_metrics": {
+    "iou_background": 0.9639,
+    "dice_background": 0.9816,
+    "iou_pothole": 0.4823,
+    "dice_pothole": 0.6507,
+    "iou_crack": 0.3701,
+    "dice_crack": 0.5403,
+    "mean_iou_overall": 0.6060,
+    "damage_miou": 0.4262,
+    "pothole_precision": 0.5544,
+    "pothole_recall": 0.7876,
+    "crack_precision": 0.5701,
+    "crack_recall": 0.5134
+  },
+  "benchmark_set": "17 Independent Held-Out Test Images (3,916,800 px)",
+  "confusion_matrix": [
+    [3694387, 18692, 47742],
+    [6218, 24776, 465],
+    [59368, 1222, 63930]
+  ],
+  "model_version": "2.0-improved",
+  "verification_status": "verified"
+}

@@ -1,0 +1,60 @@
+{
+  "classes": {
+    "0": {
+      "id": 0,
+      "name": "background",
+      "label": "Road Surface / Background",
+      "color_rgb": [
+        0,
+        0,
+        0
+      ],
+      "color_hex": "#000000"
+    },
+    "1": {
+      "id": 1,
+      "name": "pothole",
+      "label": "Pothole",
+      "color_rgb": [
+        255,
+        59,
+        48
+      ],
+      "color_hex": "#FF3B30"
+    },
+    "2": {
+      "id": 2,
+      "name": "crack",
+      "label": "Road Crack",
+      "color_rgb": [
+        255,
+        204,
+        0
+      ],
+      "color_hex": "#FFCC00"
+    }
+  },
+  "id_to_name": {
+    "0": "background",
+    "1": "pothole",
+    "2": "crack"
+  },
+  "name_to_id": {
+    "background": 0,
+    "pothole": 1,
+    "crack": 2
+  },
+  "dataset_to_model": {
+    "0": 1,
+    "1": 2,
+    "2": 0
+  },
+  "num_classes": 3,
+  "damage_classes": [
+    "pothole",
+    "crack"
+  ],
+  "excluded_classes": [
+    "manhole"
+  ]
+}

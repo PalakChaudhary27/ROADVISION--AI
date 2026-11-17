@@ -1,0 +1,121 @@
+{
+  "historical_baseline": {
+    "pothole_recall": 78.76,
+    "crack_recall": 51.34,
+    "pothole_iou": 48.23,
+    "crack_iou": 37.01,
+    "damage_miou": 42.62,
+    "background_iou": 96.12,
+    "overall_miou": 60.45
+  },
+  "experiments": {
+    "Experiment_A": {
+      "name": "Clean-Data Baseline (Decoupled BCE + Dice)",
+      "loss_type": "Decoupled BCE + Dice",
+      "resolution": "512x512",
+      "sampler": "Standard Random Shuffling",
+      "checkpoint_name": "model_A_best.pth",
+      "metrics": {
+        "background": {
+          "precision": 98.42,
+          "recall": 98.85,
+          "iou": 97.31,
+          "dice": 98.63
+        },
+        "pothole": {
+          "precision": 81.15,
+          "recall": 84.3,
+          "iou": 70.82,
+          "dice": 82.69
+        },
+        "crack": {
+          "precision": 72.4,
+          "recall": 63.85,
+          "iou": 51.2,
+          "dice": 67.72
+        },
+        "summary": {
+          "pothole_iou": 70.82,
+          "pothole_recall": 84.3,
+          "crack_iou": 51.2,
+          "crack_recall": 63.85,
+          "background_iou": 97.31,
+          "damage_miou": 61.01,
+          "overall_miou": 73.11
+        }
+      }
+    },
+    "Experiment_B": {
+      "name": "Loss Optimization (Decoupled BCE + Focal Tversky)",
+      "loss_type": "Decoupled BCE + Focal Tversky (alpha=0.30, beta=0.70, gamma=1.33)",
+      "resolution": "512x512",
+      "sampler": "Standard Random Shuffling",
+      "checkpoint_name": "model_B_best.pth",
+      "metrics": {
+        "background": {
+          "precision": 98.81,
+          "recall": 98.92,
+          "iou": 97.75,
+          "dice": 98.86
+        },
+        "pothole": {
+          "precision": 85.6,
+          "recall": 89.45,
+          "iou": 77.8,
+          "dice": 87.49
+        },
+        "crack": {
+          "precision": 78.1,
+          "recall": 74.2,
+          "iou": 61.45,
+          "dice": 76.1
+        },
+        "summary": {
+          "pothole_iou": 77.8,
+          "pothole_recall": 89.45,
+          "crack_iou": 61.45,
+          "crack_recall": 74.2,
+          "background_iou": 97.75,
+          "damage_miou": 69.63,
+          "overall_miou": 79.0
+        }
+      }
+    },
+    "Experiment_C": {
+      "name": "Data & Resolution Optimization (Balanced Sampler + Focal Tversky)",
+      "loss_type": "Decoupled BCE + Focal Tversky (alpha=0.30, beta=0.70, gamma=1.33)",
+      "resolution": "512x512 Multi-Scale / Balanced Crop Sampling",
+      "sampler": "Class & Source-Aware Weighted Sampler (Small Potholes/Thin Cracks 2.5x)",
+      "checkpoint_name": "model_C_best.pth",
+      "metrics": {
+        "background": {
+          "precision": 99.05,
+          "recall": 99.1,
+          "iou": 98.16,
+          "dice": 99.07
+        },
+        "pothole": {
+          "precision": 88.2,
+          "recall": 92.15,
+          "iou": 82.25,
+          "dice": 90.13
+        },
+        "crack": {
+          "precision": 82.5,
+          "recall": 79.6,
+          "iou": 68.1,
+          "dice": 81.02
+        },
+        "summary": {
+          "pothole_iou": 82.25,
+          "pothole_recall": 92.15,
+          "crack_iou": 68.1,
+          "crack_recall": 79.6,
+          "background_iou": 98.16,
+          "damage_miou": 75.18,
+          "overall_miou": 82.84
+        }
+      }
+    }
+  }
+}

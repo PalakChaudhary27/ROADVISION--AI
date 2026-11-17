@@ -1,0 +1,45 @@
+{
+  "model_name": "RoadVision_DeepLabV3_ResNet50",
+  "architecture": "DeepLabV3_ResNet50",
+  "backbone": "resnet50",
+  "pretrained_weights": "DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1",
+  "in_channels": 3,
+  "num_classes": 3,
+  "aux_loss": true,
+  "aux_loss_weight": 0.4,
+  "input_resolution": {
+    "height": 512,
+    "width": 512
+  },
+  "normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "training_hyperparameters": {
+    "batch_size": 8,
+    "backbone_lr": 1e-05,
+    "head_lr": 0.0001,
+    "optimizer": "AdamW (differential LR)",
+    "loss_function": "WeightedCE+FocalTversky",
+    "class_weights": [
+      0.30,
+      1.4,
+      2.0
+    ],
+    "tversky_alpha": 0.35,
+    "tversky_beta": 0.65
+  },
+  "dataset": "Road Damage Dataset: Potholes Cracks and Manholes",
+  "annotation_type": "polygon_rasterised_approximate_with_defect_refinement",
+  "export_timestamp": "2026-11-13T10:43:00Z",
+  "framework": "PyTorch",
+  "version": "2.0-improved"
+}
