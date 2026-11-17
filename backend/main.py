@@ -63,6 +63,72 @@ def resolve_artifacts_path() -> Path:
     )
 
 
+def ensure_checkpoint_downloaded() -> Path:
+    """
+    Ensures best_model.pth is available on disk.
+
+    Resolution order:
+    1. MODEL_CHECKPOINT_PATH env var  — absolute path to an already-downloaded .pth file.
+    2. Local artifacts directory      — project-local path (dev / production with mounted storage).
+    3. MODEL_CHECKPOINT_URL env var   — HTTPS or Hugging Face Hub URL; file is downloaded on first
+                                        boot and cached to /tmp/roadvision_model/best_model.pth.
+
+    Raises FileNotFoundError if none of the sources is available.
+    """
+    # 1. Explicit file path
+    env_path = os.environ.get("MODEL_CHECKPOINT_PATH", "").strip()
+    if env_path:
+        p = Path(env_path)
+        if p.exists() and p.stat().st_size > 1_000_000:
+            logger.info(f"Checkpoint loaded from MODEL_CHECKPOINT_PATH: {p}")
+            return p
+        logger.warning(f"MODEL_CHECKPOINT_PATH set but file not found or too small: {env_path}")
+
+    # 2. Local artifacts directory (development / local run)
+    for candidate in ARTIFACTS_DIR_CANDIDATES:
+        pth = candidate / "best_model.pth"
+        if pth.exists() and pth.stat().st_size > 1_000_000:
+            logger.info(f"Checkpoint found locally: {pth}")
+            return pth
+
+    # 3. Download from URL (Hugging Face Hub / HTTPS)
+    url = os.environ.get("MODEL_CHECKPOINT_URL", "").strip()
+    if not url:
+        raise FileNotFoundError(
+            "No model checkpoint found. Set MODEL_CHECKPOINT_PATH (path) or "
+            "MODEL_CHECKPOINT_URL (download URL) environment variable."
+        )
+
+    cache_dir = Path("/tmp/roadvision_model")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    dest = cache_dir / "best_model.pth"
+
+    if dest.exists() and dest.stat().st_size > 1_000_000:
+        logger.info(f"Using cached checkpoint: {dest}")
+        return dest
+
+    logger.info(f"Downloading model checkpoint from: {url}")
+    import requests  # only needed for download path
+    with requests.get(url, stream=True, timeout=300) as r:
+        r.raise_for_status()
+        total = int(r.headers.get("content-length", 0))
+        downloaded = 0
+        with open(dest, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
+                f.write(chunk)
+                downloaded += len(chunk)
+                if total:
+                    pct = downloaded / total * 100
+                    logger.info(f"Download progress: {pct:.1f}%  ({downloaded}/{total} bytes)")
+
+    if dest.stat().st_size < 1_000_000:
+        dest.unlink(missing_ok=True)
+        raise RuntimeError("Downloaded checkpoint appears corrupt (< 1 MB).")
+
+    logger.info(f"Checkpoint downloaded and cached to {dest} ({dest.stat().st_size:,} bytes)")
+    return dest
+
+
 def extract_bounding_boxes(
     pred_mask: np.ndarray,
     probs_512: np.ndarray,
@@ -272,16 +338,34 @@ class ModelManager:
 
     def load(self):
         """Loads configuration, class mappings, and model weights into memory."""
-        self.artifacts_dir = resolve_artifacts_path()
+        # Support env-variable override for checkpoint path (for cloud deployments)
+        checkpoint_env = os.environ.get("MODEL_CHECKPOINT_PATH", "")
+        if checkpoint_env and Path(checkpoint_env).exists():
+            # Env points to an already-downloaded file on disk
+            self.artifacts_dir = Path(checkpoint_env).parent
+            logger.info(f"Using checkpoint from MODEL_CHECKPOINT_PATH: {checkpoint_env}")
+        else:
+            self.artifacts_dir = resolve_artifacts_path()
         logger.info(f"Loading artifacts from: {self.artifacts_dir}")
 
-        # 1. Load config
-        config_path = self.artifacts_dir / "model_config.json"
+        # 1. Resolve checkpoint — may download from MODEL_CHECKPOINT_URL if needed
+        weights_path = ensure_checkpoint_downloaded()
+
+        # Locate supporting config files alongside the checkpoint or in artifacts_dir
+        def _find(filename):
+            for d in [self.artifacts_dir, weights_path.parent]:
+                p = Path(d) / filename
+                if p.exists():
+                    return p
+            raise FileNotFoundError(f"Could not find {filename} near checkpoint.")
+
+        # 2. Load config
+        config_path = _find("model_config.json")
         with open(config_path, "r", encoding="utf-8") as f:
             self.config = json.load(f)
 
-        # 2. Load class mapping
-        mapping_path = self.artifacts_dir / "class_mapping.json"
+        # 3. Load class mapping
+        mapping_path = _find("class_mapping.json")
         with open(mapping_path, "r", encoding="utf-8") as f:
             self.class_mapping = json.load(f)
 
@@ -293,7 +377,7 @@ class ModelManager:
             f"with num_classes={num_classes}, aux_loss={aux_loss} on device={self.device}"
         )
 
-        # 3. Instantiate model matching training configuration
+        # 4. Instantiate model matching training configuration
         # Note: weights_backbone=None prevents downloading backbone weights since
         # best_model.pth already contains all weights (backbone, classifier, aux).
         model = deeplabv3_resnet50(
@@ -303,7 +387,6 @@ class ModelManager:
             aux_loss=aux_loss
         )
 
-        weights_path = self.artifacts_dir / "best_model.pth"
         logger.info(f"Loading model weights from {weights_path}...")
         state_dict = torch.load(weights_path, map_location=self.device)
         model.load_state_dict(state_dict)
@@ -528,18 +611,26 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS for Vite frontend and local testing
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
+# Configure CORS — reads ALLOWED_ORIGINS env var in production, falls back to permissive dev list.
+_allowed_origins_env = os.environ.get("ALLOWED_ORIGINS", "")
+if _allowed_origins_env:
+    # Production: comma-separated list, e.g. "https://my-app.vercel.app,https://www.mysite.com"
+    _cors_origins = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
+else:
+    # Development: allow all Vite dev ports plus wildcard fallback
+    _cors_origins = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8080",
         "http://127.0.0.1:8000",
-        "*"
-    ],
+        "*",
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -12,6 +12,7 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import InspectionHistoryPage from './pages/InspectionHistoryPage';
 import ReportsPage from './pages/ReportsPage';
 import { Loader2 } from 'lucide-react';
+import { apiUrl } from './services/api';
 
 function MainApp() {
   const { currentUser, loading: authLoading } = useAuth();
@@ -93,7 +94,7 @@ function MainApp() {
     setIsRefreshing(true);
     try {
       // 1. Health check
-      const healthRes = await fetch('/health').catch(() => null);
+      const healthRes = await fetch(apiUrl('/health')).catch(() => null);
       if (healthRes && healthRes.ok) {
         setBackendOnline(true);
       } else {
@@ -101,14 +102,14 @@ function MainApp() {
       }
 
       // 2. Fetch inspections
-      const inspRes = await fetch('/api/inspections');
+      const inspRes = await fetch(apiUrl('/api/inspections'));
       if (inspRes.ok) {
         const inspData = await inspRes.json();
         setInspections(inspData);
 
         // If no active result, set currentResult to the latest saved one
         if (!currentResult && inspData.length > 0) {
-          const fullRes = await fetch(`/api/inspections/${inspData[0].id}`);
+          const fullRes = await fetch(apiUrl(`/api/inspections/${inspData[0].id}`));
           if (fullRes.ok) {
             const fullData = await fullRes.json();
             setCurrentResult(fullData);
@@ -118,7 +119,7 @@ function MainApp() {
       }
 
       // 3. Fetch analytics
-      const anaRes = await fetch('/api/analytics');
+      const anaRes = await fetch(apiUrl('/api/analytics'));
       if (anaRes.ok) {
         const anaData = await anaRes.json();
         setAnalytics(anaData);
@@ -146,7 +147,7 @@ function MainApp() {
     if (!resultToSave || isSaved || isSaving) return;
     setIsSaving(true);
     try {
-      const resp = await fetch('/api/inspections', {
+      const resp = await fetch(apiUrl('/api/inspections'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(resultToSave),
@@ -170,7 +171,7 @@ function MainApp() {
   // Open a saved inspection into Detection Results
   const handleViewInspection = async (id) => {
     try {
-      const resp = await fetch(`/api/inspections/${id}`);
+      const resp = await fetch(apiUrl(`/api/inspections/${id}`));
       if (!resp.ok) throw new Error("Could not retrieve inspection.");
       const data = await resp.json();
       setCurrentResult(data);
@@ -184,7 +185,7 @@ function MainApp() {
   // Delete an inspection
   const handleDeleteInspection = async (id) => {
     try {
-      const resp = await fetch(`/api/inspections/${id}`, { method: 'DELETE' });
+      const resp = await fetch(apiUrl(`/api/inspections/${id}`), { method: 'DELETE' });
       if (!resp.ok) throw new Error("Could not delete inspection.");
       if (currentResult?.id === id) {
         setCurrentResult(null);
@@ -200,7 +201,7 @@ function MainApp() {
     if (item.images?.overlay) {
       setSelectedReportInspection(item);
     } else {
-      const resp = await fetch(`/api/inspections/${item.id}`);
+      const resp = await fetch(apiUrl(`/api/inspections/${item.id}`));
       if (resp.ok) {
         setSelectedReportInspection(await resp.json());
       }

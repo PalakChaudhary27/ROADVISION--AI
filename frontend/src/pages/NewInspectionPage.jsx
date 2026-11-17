@@ -14,6 +14,7 @@ import {
   Info,
   ArrowRight
 } from 'lucide-react';
+import { apiUrl } from '../services/api';
 
 export default function NewInspectionPage({ onInferenceSuccess, backendOnline }) {
   const [file, setFile] = useState(null);
@@ -30,7 +31,7 @@ export default function NewInspectionPage({ onInferenceSuccess, backendOnline })
 
   // Load sample gallery from backend
   useEffect(() => {
-    fetch('/api/samples')
+    fetch(apiUrl('/api/samples'))
       .then(res => res.ok ? res.json() : [])
       .then(data => setSamples(data))
       .catch(() => setSamples([]));
@@ -78,7 +79,7 @@ export default function NewInspectionPage({ onInferenceSuccess, backendOnline })
       setIsLoading(true);
       setProgressMsg(`Loading sample image: ${sample.title}...`);
       setErrorMsg(null);
-      const res = await fetch(`/api/samples/${sample.filename}`);
+      const res = await fetch(apiUrl(`/api/samples/${sample.filename}`));
       if (!res.ok) throw new Error("Could not load sample image file.");
       const blob = await res.blob();
       const sampleFile = new File([blob], sample.filename, { type: 'image/jpeg' });
@@ -121,7 +122,7 @@ export default function NewInspectionPage({ onInferenceSuccess, backendOnline })
       const formData = new FormData();
       formData.append('file', file);
 
-      const resp = await fetch('/predict', {
+      const resp = await fetch(apiUrl('/predict'), {
         method: 'POST',
         body: formData,
       });
