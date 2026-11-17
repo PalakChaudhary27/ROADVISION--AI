@@ -59,3 +59,9 @@ verify_paper.py
 
 # Jupyter checkpoints
 .ipynb_checkpoints/
+
+# OCI Private Keys
+oci/id_rsa_oci
+oci/*.key
+*.pem
+
