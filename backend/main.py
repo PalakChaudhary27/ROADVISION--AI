@@ -49,18 +49,19 @@ ARTIFACTS_DIR_CANDIDATES = [
     BASE_DIR / "artifacts" / "roadvision_model_artifacts",
     Path("artifacts/roadvision_model_artifacts"),
     Path("../artifacts/roadvision_model_artifacts"),
+    PROJECT_ROOT / "configs",
+    BASE_DIR / "configs",
+    Path("configs"),
 ]
 
 
-def resolve_artifacts_path() -> Path:
-    """Find the directory containing model artifacts."""
+def resolve_config_dir() -> Path:
+    """Find the directory containing model_config.json and class_mapping.json."""
     for candidate in ARTIFACTS_DIR_CANDIDATES:
-        if candidate.exists() and (candidate / "best_model.pth").exists():
+        if candidate.exists() and (candidate / "model_config.json").exists():
             return candidate.resolve()
-    raise FileNotFoundError(
-        f"Could not locate model artifacts directory containing 'best_model.pth'. "
-        f"Searched: {[str(c) for c in ARTIFACTS_DIR_CANDIDATES]}"
-    )
+    # Fallback to backend directory or project root
+    return PROJECT_ROOT
 
 
 def ensure_checkpoint_downloaded() -> Path:
@@ -70,8 +71,8 @@ def ensure_checkpoint_downloaded() -> Path:
     Resolution order:
     1. MODEL_CHECKPOINT_PATH env var  — absolute path to an already-downloaded .pth file.
     2. Local artifacts directory      — project-local path (dev / production with mounted storage).
-    3. MODEL_CHECKPOINT_URL env var   — HTTPS or Hugging Face Hub URL; file is downloaded on first
-                                        boot and cached to /tmp/roadvision_model/best_model.pth.
+    3. MODEL_CHECKPOINT_URL env var   — HTTPS or Hugging Face Hub URL; file is downloaded on boot
+                                        and cached to /tmp/roadvision_model/best_model.pth.
 
     Raises FileNotFoundError if none of the sources is available.
     """
@@ -80,53 +81,83 @@ def ensure_checkpoint_downloaded() -> Path:
     if env_path:
         p = Path(env_path)
         if p.exists() and p.stat().st_size > 1_000_000:
-            logger.info(f"Checkpoint loaded from MODEL_CHECKPOINT_PATH: {p}")
+            logger.info(f"Checkpoint found from MODEL_CHECKPOINT_PATH: {p} ({p.stat().st_size:,} bytes)")
             return p
-        logger.warning(f"MODEL_CHECKPOINT_PATH set but file not found or too small: {env_path}")
+        logger.warning(f"MODEL_CHECKPOINT_PATH set but file not found or invalid: {env_path}")
 
-    # 2. Local artifacts directory (development / local run)
+    # 2. Local artifacts directory (development / local checkout with model weights)
     for candidate in ARTIFACTS_DIR_CANDIDATES:
         pth = candidate / "best_model.pth"
         if pth.exists() and pth.stat().st_size > 1_000_000:
-            logger.info(f"Checkpoint found locally: {pth}")
-            return pth
+            logger.info(f"Checkpoint found locally: {pth} ({pth.stat().st_size:,} bytes)")
+            return pth.resolve()
 
-    # 3. Download from URL (Hugging Face Hub / HTTPS)
-    url = os.environ.get("MODEL_CHECKPOINT_URL", "").strip()
-    if not url:
+    # 3. Download from URL (Hugging Face Hub / HTTPS direct download link)
+    raw_url = os.environ.get("MODEL_CHECKPOINT_URL", "").strip()
+    if not raw_url:
         raise FileNotFoundError(
-            "No model checkpoint found. Set MODEL_CHECKPOINT_PATH (path) or "
-            "MODEL_CHECKPOINT_URL (download URL) environment variable."
+            "Could not locate model checkpoint 'best_model.pth'. Local search paths had no checkpoint, "
+            "and neither MODEL_CHECKPOINT_PATH nor MODEL_CHECKPOINT_URL environment variable is set."
         )
 
-    cache_dir = Path("/tmp/roadvision_model")
+    # Convert standard Hugging Face blob viewing URL to direct resolve URL if needed
+    # e.g., https://huggingface.co/user/repo/blob/main/best_model.pth -> resolve/main/best_model.pth
+    download_url = raw_url.replace("/blob/main/", "/resolve/main/")
+
+    # Use system temp directory cross-platform (/tmp on Linux/Render, %TEMP% on Windows)
+    import tempfile
+    cache_dir = Path(tempfile.gettempdir()) / "roadvision_model"
     cache_dir.mkdir(parents=True, exist_ok=True)
     dest = cache_dir / "best_model.pth"
 
-    if dest.exists() and dest.stat().st_size > 1_000_000:
-        logger.info(f"Using cached checkpoint: {dest}")
+    # Reuse cached file if it exists and has valid weight size (> 100 MB)
+    if dest.exists() and dest.stat().st_size > 100_000_000:
+        logger.info(f"Using previously cached checkpoint: {dest} ({dest.stat().st_size:,} bytes)")
         return dest
 
-    logger.info(f"Downloading model checkpoint from: {url}")
-    import requests  # only needed for download path
-    with requests.get(url, stream=True, timeout=300) as r:
-        r.raise_for_status()
-        total = int(r.headers.get("content-length", 0))
-        downloaded = 0
-        with open(dest, "wb") as f:
-            for chunk in r.iter_content(chunk_size=8 * 1024 * 1024):
+    logger.info(f"Downloading production model checkpoint from: {download_url}...")
+    import urllib.request
+    import urllib.error
+
+    temp_dest = cache_dir / "best_model.pth.tmp"
+    try:
+        req = urllib.request.Request(
+            download_url,
+            headers={"User-Agent": "RoadVision-AI-Deployment/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=600) as response, open(temp_dest, "wb") as f:
+            total_size = int(response.headers.get("Content-Length", 0))
+            downloaded = 0
+            block_size = 8 * 1024 * 1024  # 8MB chunks
+            while True:
+                chunk = response.read(block_size)
+                if not chunk:
+                    break
                 f.write(chunk)
                 downloaded += len(chunk)
-                if total:
-                    pct = downloaded / total * 100
-                    logger.info(f"Download progress: {pct:.1f}%  ({downloaded}/{total} bytes)")
+                if total_size > 0:
+                    pct = (downloaded / total_size) * 100.0
+                    logger.info(f"Download progress: {pct:.1f}% ({downloaded:,}/{total_size:,} bytes)")
+                else:
+                    logger.info(f"Downloaded: {downloaded:,} bytes")
 
-    if dest.stat().st_size < 1_000_000:
-        dest.unlink(missing_ok=True)
-        raise RuntimeError("Downloaded checkpoint appears corrupt (< 1 MB).")
+        if not temp_dest.exists() or temp_dest.stat().st_size < 1_000_000:
+            actual_size = temp_dest.stat().st_size if temp_dest.exists() else 0
+            temp_dest.unlink(missing_ok=True)
+            raise RuntimeError(
+                f"Downloaded checkpoint file is too small or corrupt ({actual_size} bytes). "
+                f"Check that MODEL_CHECKPOINT_URL is a direct download link and the Hugging Face repository is public or token authorized."
+            )
 
-    logger.info(f"Checkpoint downloaded and cached to {dest} ({dest.stat().st_size:,} bytes)")
-    return dest
+        # Atomic rename into destination path
+        temp_dest.replace(dest)
+        logger.info(f"Checkpoint successfully downloaded and verified at {dest} ({dest.stat().st_size:,} bytes).")
+        return dest
+
+    except Exception as exc:
+        temp_dest.unlink(missing_ok=True)
+        logger.error(f"Failed to download model checkpoint from {download_url}: {exc}")
+        raise RuntimeError(f"Model checkpoint download failed: {exc}") from exc
 
 
 def extract_bounding_boxes(
@@ -338,33 +369,28 @@ class ModelManager:
 
     def load(self):
         """Loads configuration, class mappings, and model weights into memory."""
-        # Support env-variable override for checkpoint path (for cloud deployments)
-        checkpoint_env = os.environ.get("MODEL_CHECKPOINT_PATH", "")
-        if checkpoint_env and Path(checkpoint_env).exists():
-            # Env points to an already-downloaded file on disk
-            self.artifacts_dir = Path(checkpoint_env).parent
-            logger.info(f"Using checkpoint from MODEL_CHECKPOINT_PATH: {checkpoint_env}")
-        else:
-            self.artifacts_dir = resolve_artifacts_path()
-        logger.info(f"Loading artifacts from: {self.artifacts_dir}")
-
-        # 1. Resolve checkpoint — may download from MODEL_CHECKPOINT_URL if needed
+        # 1. Download or resolve best_model.pth FIRST
         weights_path = ensure_checkpoint_downloaded()
 
-        # Locate supporting config files alongside the checkpoint or in artifacts_dir
+        # 2. Locate configuration directory (artifacts/roadvision_model_artifacts or configs/)
+        config_dir = resolve_config_dir()
+        self.artifacts_dir = config_dir
+        logger.info(f"Loading model configurations from: {config_dir}")
+
+        # Locate supporting config files alongside config_dir or weights_path
         def _find(filename):
-            for d in [self.artifacts_dir, weights_path.parent]:
+            for d in [config_dir, weights_path.parent, PROJECT_ROOT / "configs", BASE_DIR / "configs"]:
                 p = Path(d) / filename
                 if p.exists():
                     return p
-            raise FileNotFoundError(f"Could not find {filename} near checkpoint.")
+            raise FileNotFoundError(f"Could not find configuration file {filename}.")
 
-        # 2. Load config
+        # 3. Load config
         config_path = _find("model_config.json")
         with open(config_path, "r", encoding="utf-8") as f:
             self.config = json.load(f)
 
-        # 3. Load class mapping
+        # 4. Load class mapping
         mapping_path = _find("class_mapping.json")
         with open(mapping_path, "r", encoding="utf-8") as f:
             self.class_mapping = json.load(f)
@@ -377,7 +403,7 @@ class ModelManager:
             f"with num_classes={num_classes}, aux_loss={aux_loss} on device={self.device}"
         )
 
-        # 4. Instantiate model matching training configuration
+        # 5. Instantiate model matching training configuration
         # Note: weights_backbone=None prevents downloading backbone weights since
         # best_model.pth already contains all weights (backbone, classifier, aux).
         model = deeplabv3_resnet50(
